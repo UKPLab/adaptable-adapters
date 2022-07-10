@@ -1,8 +1,0 @@
-numpy
-scipy
-matplotlib
-torch==1.9.0
-tqdm
-termcolor
-# tensorflow>=2.0.0
-# mxnet-cu102==1.7.0

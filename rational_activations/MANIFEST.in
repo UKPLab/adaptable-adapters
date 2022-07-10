@@ -1,4 +1,0 @@
-include *.sh
-include *.txt
-recursive-include cuda *.cu
-recursive-include requirements*
