@@ -114,7 +114,7 @@ def get_adapters_switches(model):
         if "switch_logits" in name:
             switches.append((name, param))
             layer_n = int(re.findall(r'\d+', name[11:-1])[0])
-            #If the corresponding logit for the adapter layer is higher than that of the skip connection 
+            #If the corresponding logit for the adapter layer is higher than that of the skip connection
             if param[1].item() > param[0].item():
                 selected_layers.append(layer_n)
             else:
@@ -550,13 +550,26 @@ def main(args: Args):
                         item = label_list[item]
                         writer.write(f"{index}\t{item}\n")
 
-    selected_layers, useless_layers, adapters_switches = get_adapters_switches(model)
+    # Save a summary
     summary["task_name"] = args.task_name
     jsonable_args = make_jsonable(args)
     summary["args"] = jsonable_args
-    summary["selected_layers"] = selected_layers
-    summary["useless_layers"] = useless_layers
-
+    selected_layers, useless_layers, adapters_switches = get_adapters_switches(model)
+    final = {}
+    final["selected_layers"] = selected_layers
+    final["useless_layers"] = useless_layers
+    summary["final_model"] = final
+    # load best model
+    trainer._load_checkpoint(trainer.state.best_model_checkpoint)
+    selected_layers, useless_layers, adapters_switches = get_adapters_switches(trainer.model)
+    best = {}
+    best["selected_layers"] = selected_layers
+    best["useless_layers"] = useless_layers
+    summary["best_model"] = best
+    for model_type in ["final", "best"]:
+        print(f"{model_type}:")
+        print(f"selected_layers: {summary[f'{model_type}_model']['selected_layers']}")
+        print(f"useless_layers: {summary[f'{model_type}_model']['useless_layers']}")
     timestamp = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     sum_save_folder = "summaries"
     os.makedirs(sum_save_folder, exist_ok=True)

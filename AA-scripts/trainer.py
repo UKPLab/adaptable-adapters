@@ -1,4 +1,5 @@
 from transformers import Trainer
+from transformers.trainer import WEIGHTS_NAME
 from transformers.trainer_utils import PredictionOutput, speed_metrics
 
 
@@ -12,7 +13,7 @@ import torch
 from datasets import Dataset
 
 from args import BaseArgs
-
+import os
 
 class CustomTrainerMixin(Trainer):
 
@@ -43,7 +44,7 @@ class CustomTrainerMixin(Trainer):
         prefix = metric_key_prefix
 
         # Evaluate the position of the switches.
-        metrics = {} 
+        metrics = {}
 
         if eval_dataset is not None:
             metrics[f"{metric_key_prefix}_samples"] = len(eval_dataset)
@@ -62,6 +63,25 @@ class CustomTrainerMixin(Trainer):
 
 
 class GLUETrainer(CustomTrainerMixin):
-    pass
+    def _load_checkpoint(self, checkpoint_folder):
+        if self.do_save_full_model:
+            # We load the model state dict on the CPU to avoid an OOM error.
+            state_dict = torch.load(os.path.join(checkpoint_folder, WEIGHTS_NAME), map_location="cpu")
+            # If the model is on the GPU, it still works!
+            self._load_state_dict_in_model(state_dict)
+        if self.do_save_adapters:
+            adapter_loaded = False
+            if os.path.isdir(checkpoint_folder):
+                for file_name in os.listdir(checkpoint_folder):
+                    if os.path.isdir(os.path.join(checkpoint_folder, file_name)):
+                        if "," in file_name:
+                            self.model.load_adapter_fusion(os.path.join(checkpoint_folder, file_name))
+                            adapter_loaded = True
+                        else:
+                            self.model.load_adapter(
+                                os.path.join(os.path.join(checkpoint_folder, file_name))
+                            )
+                            adapter_loaded = True
 
-
+            if not adapter_loaded:
+                raise Exception("Can't find a valid checkpoint at {}".format(checkpoint_folder))

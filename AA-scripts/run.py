@@ -39,15 +39,12 @@ def _get_last_notna_value(df):
 #     return wandb.Api(timeout=timeout)
 
 
-
 def get_selected_layers(path):
     jdata = json.load(open(path))
     print(f"Loaded data from {path}")
-    selected_layers = jdata["selected_layers"]
+    selected_layers = jdata["best_model"]["selected_layers"]
     print(f"Using selected layers: {selected_layers}")
     return selected_layers
-
-
 
 
 def default_args(args):
@@ -153,7 +150,7 @@ def _add_id_arguments(parser, single=True):
 def _add_train_arguments(parser):
     parser.add_argument(
         '--layer_num',
-        type=int, 
+        type=int,
         default=24,
         help="The number of layers in the specified model in model_name_or_path"
     )
